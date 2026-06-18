@@ -13,7 +13,9 @@ bun install
 bun dev
 ```
 
-Then open the app, drag a `.glb`/`.gltf` onto the page, and bake.
+The app opens with a built-in **Cornell box** demo scene already loaded — just hit **Bake**, then toggle
+**Apply GI** to see the red and green walls bleed onto the white blocks and floor. Or drop your own
+`.glb`/`.gltf` onto the page.
 
 ## What APV is
 
@@ -47,6 +49,7 @@ The render-side and bake-side maths are split so each is easy to read on its own
   (`ApvLambertMaterial`) that adds the result as indirect light.
 - **`src/apv-scene.ts`** — the WebGPU viewport: loads the model, renders it with the GI material, and
   draws the debug overlays (bounding box + brick wireframes).
+- **`src/presets.ts`** — the built-in Cornell box demo scene (procedural three.js, no asset download).
 - **`src/MainView.tsx`** — the UI (drop zone, parameters, stats, toggles).
 
 ## The two textures

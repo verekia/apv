@@ -66,14 +66,10 @@ const frameCamera = () => {
   controls.update()
 }
 
-export const loadModelFromFile = async (file: File): Promise<ModelInfo> => {
-  const buffer = await file.arrayBuffer()
-  const loader = new GLTFLoader()
-  const isText = /\.gltf$/i.test(file.name)
-  const gltf = await new Promise<{ scene: Object3D }>((resolve, reject) => {
-    loader.parse(isText ? new TextDecoder().decode(buffer) : buffer, '', resolve, reject)
-  })
-
+// Drop a loaded object into the scene: swap its materials for GI-receiving ones, recompute the exact
+// bounding box, refit the camera, and clear any previous model/bricks. Shared by the file drop and the
+// built-in demo scene.
+const installModel = (object: Object3D): ModelInfo => {
   if (model) {
     scene.remove(model)
     model.traverse(o => {
@@ -82,7 +78,7 @@ export const loadModelFromFile = async (file: File): Promise<ModelInfo> => {
     })
   }
 
-  model = gltf.scene
+  model = object
   let triangles = 0
   let meshes = 0
   model.traverse(o => {
@@ -108,6 +104,18 @@ export const loadModelFromFile = async (file: File): Promise<ModelInfo> => {
 
   return { box: modelBox.clone(), triangles, meshes, size: [size.x, size.y, size.z] }
 }
+
+export const loadModelFromFile = async (file: File): Promise<ModelInfo> => {
+  const buffer = await file.arrayBuffer()
+  const loader = new GLTFLoader()
+  const isText = /\.gltf$/i.test(file.name)
+  const gltf = await new Promise<{ scene: Object3D }>((resolve, reject) => {
+    loader.parse(isText ? new TextDecoder().decode(buffer) : buffer, '', resolve, reject)
+  })
+  return installModel(gltf.scene)
+}
+
+export const loadSceneObject = (object: Object3D): ModelInfo => installModel(object)
 
 export const getLoadedModel = () => model
 export const getModelBox = () => modelBox.clone()

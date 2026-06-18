@@ -10,11 +10,14 @@ import {
   getModelBox,
   initScene,
   loadModelFromFile,
+  loadSceneObject,
   setBoxVisible,
   setVolumesVisible,
   showBrickVolume,
 } from './apv-scene'
 import type { ModelInfo, VolumeMode } from './apv-scene'
+import { PRESETS } from './presets'
+import type { ScenePreset } from './presets'
 
 type BakeConfig = { spacing: number; falloff: number; eps: number; maxLevel: number }
 type Stats = { probes: number; bricks: number; atlas: string; kb: number; gzip: number; grid: string }
@@ -29,7 +32,7 @@ export const MainView = () => {
   const [error, setError] = useState<string | null>(null)
   const [model, setModel] = useState<ModelInfo | null>(null)
   const [cfg, setCfg] = useState<BakeConfig>({ spacing: 1, falloff: 6, eps: 0.2, maxLevel: 3 })
-  const [status, setStatus] = useState('Drop a .glb or .gltf model to begin.')
+  const [status, setStatus] = useState('Load the demo scene, or drop a .glb / .gltf model.')
   const [baking, setBaking] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
 
@@ -43,9 +46,34 @@ export const MainView = () => {
   useEffect(() => {
     if (!viewportRef.current) return
     initScene(viewportRef.current)
-      .then(() => setReady(true))
+      .then(() => {
+        setReady(true)
+        if (PRESETS[0]) loadPreset(PRESETS[0]) // start with the demo scene so there's always something to bake
+      })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'WebGPU is not available in this browser.'))
   }, [])
+
+  // Reset GI/stats for a freshly loaded model and seed the bake config from its size (overridable per preset).
+  const afterLoad = (info: ModelInfo, overrides?: Partial<BakeConfig>) => {
+    const maxDim = Math.max(...info.size)
+    setCfg({
+      spacing: overrides?.spacing ?? Math.max(0.05, Math.round((maxDim / 24) * 100) / 100),
+      falloff: overrides?.falloff ?? Math.max(0.1, Math.round((maxDim / 6) * 100) / 100),
+      eps: overrides?.eps ?? 0.2,
+      maxLevel: overrides?.maxLevel ?? 3,
+    })
+    setStats(null)
+    lastVolume.current = null
+    setGiEnabled(false)
+    setModel(info)
+    setBoxVisible(boxOn)
+  }
+
+  const loadPreset = (preset: ScenePreset) => {
+    const info = loadSceneObject(preset.build())
+    afterLoad(info, preset.params)
+    setStatus(`Loaded ${preset.label} — bake to see the GI.`)
+  }
 
   const onFile = async (file: File) => {
     if (!/\.(glb|gltf)$/i.test(file.name)) {
@@ -53,19 +81,9 @@ export const MainView = () => {
       return
     }
     setStatus(`Loading ${file.name}…`)
-    setStats(null)
-    lastVolume.current = null
     try {
       const info = await loadModelFromFile(file)
-      const maxDim = Math.max(...info.size)
-      setCfg({
-        spacing: Math.max(0.05, Math.round((maxDim / 24) * 100) / 100),
-        falloff: Math.max(0.1, Math.round((maxDim / 6) * 100) / 100),
-        eps: 0.2,
-        maxLevel: 3,
-      })
-      setModel(info)
-      setBoxVisible(boxOn)
+      afterLoad(info)
       setStatus(`Loaded ${file.name} — ${info.meshes} meshes, ${info.triangles.toLocaleString()} triangles.`)
     } catch (e) {
       setStatus(`Failed to load: ${e instanceof Error ? e.message : String(e)}`)
@@ -178,8 +196,13 @@ export const MainView = () => {
 
         <section>
           <h2>Model</h2>
+          {PRESETS.map(p => (
+            <button key={p.id} disabled={!ready} onClick={() => loadPreset(p)}>
+              Load {p.label}
+            </button>
+          ))}
           <label className="file-btn">
-            Choose .glb / .gltf
+            …or choose .glb / .gltf
             <input
               type="file"
               accept=".glb,.gltf"

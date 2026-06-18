@@ -39,7 +39,10 @@ under `src/apv/`:
   sampler node (NEAREST indirection read + trilinear atlas read + RGBM decode), and `ApvLambertMaterial`
   (a `MeshLambertNodeMaterial` whose lighting model adds the GI as indirect diffuse light).
 - **`src/apv-scene.ts`** — vanilla WebGPU viewport: GLTF load + material adoption, camera framing, render
-  loop, and the debug overlays (bounding-box helper + per-brick wireframe `InstancedMesh`).
+  loop, and the debug overlays (bounding-box helper + per-brick wireframe `InstancedMesh`). `installModel`
+  is shared by the file drop (`loadModelFromFile`) and the demo scene (`loadSceneObject`).
+- **`src/presets.ts`** — the built-in procedural Cornell box demo scene + its recommended bake params,
+  auto-loaded on start so there's always something to bake.
 - **`src/MainView.tsx`** — the React UI (drop zone, parameters, stats, toggles); drives the scene via the
   imperative functions the scene/volume modules export.
 
