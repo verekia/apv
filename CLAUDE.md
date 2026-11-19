@@ -59,7 +59,7 @@ the exact model bounding box) → `bakeIrradiance` (sparse) → `buildBricks` (B
 - **Formatting/lint**: oxfmt (no semicolons, single quotes, 120 cols, trailing commas) + oxlint.
   `tsconfig` has `noUnusedLocals`/`noUnusedParameters`.
 - **TSL gotchas**: `BRDF_Lambert(...)` returns a loosely-typed node — narrow it (`as unknown as
-Node<'vec3'>`) before chaining operators, as `lambertBrdf` does. Node materials pick up
+  Node<'vec3'>`) before chaining operators, as `lambertBrdf` does. Node materials pick up
   `InstancedMesh` per-instance colours automatically (used by the brick wireframes).
 - **Keep it minimal.** This is a learning demo; prefer clarity over features.
 
